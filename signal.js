@@ -22,13 +22,43 @@
         signal.events[event_type].push([event_callback, event_data])
     }
 
-    const defineSignalValue = (signal, get_function, set_function) => {
-        return Object.defineProperty(signal, "value", {
-            get: get_function,
-            set: set_function,
-            enumerable: true,
-            configurable: true,
-        })
+    const switchComplexity = (signal, getter, setter, value) => {
+        if(
+            signal.value_type !== typeof value
+        ) {
+            if(typeof value === "object") {
+                return new Proxy(signal, {
+                    get: getter,
+                    set: setter
+                })
+            } else {
+                return Object.defineProperty(signal, "value", {
+                    get: getter,
+                    set: setter,
+                    enumerable: true,
+                    configurable: true,
+                })
+            }
+        }
+
+    }
+
+    const defineSignalValue = (signal, getter, setter) => {
+        if(typeof getter() === "object") {
+            signal.value_type = "object"
+            return new Proxy(signal, {
+                get: getter,
+                set: setter
+            })
+        } else {
+            signal.value_type = typeof getter()
+            return Object.defineProperty(signal, "value", {
+                get: getter,
+                set: setter,
+                enumerable: true,
+                configurable: true,
+            })
+        }
     }
 
     function DerivedSignal(format_function, depends_on = []) {
